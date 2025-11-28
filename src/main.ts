@@ -70,9 +70,9 @@ async function bootstrap() {
     },
   });
 
-  await app.listen(port);
-  console.log(`🚀 Servidor corriendo en http://localhost:${port}/api`);
-  console.log(`📚 Swagger disponible en http://localhost:${port}/api/docs`);
+  await app.listen(port, '0.0.0.0');
+  console.log(`🚀 Servidor corriendo en http://0.0.0.0:${port}/api`);
+  console.log(`📚 Swagger disponible en http://0.0.0.0:${port}/api/docs`);
   console.log(`📦 Base de datos: ${configService.get<string>('database.uri')?.replace(/\/\/.*@/, '//***:***@') || 'No configurada'}`);
 }
 bootstrap();

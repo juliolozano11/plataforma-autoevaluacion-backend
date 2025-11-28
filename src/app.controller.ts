@@ -6,7 +6,11 @@ export class AppController {
   constructor(private readonly appService: AppService) {}
 
   @Get()
-  getHello(): string {
-    return this.appService.getHello();
+  getHello(): { message: string; docs: string; status: string } {
+    return {
+      message: 'API de Evaluación de Empleabilidad',
+      docs: '/api/docs',
+      status: 'running',
+    };
   }
 }
