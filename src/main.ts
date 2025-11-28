@@ -10,7 +10,8 @@ async function bootstrap() {
   
   // Obtener configuración
   const configService = app.get(ConfigService);
-  const port = configService.get<number>('PORT') || 3000;
+  // Railway asigna el puerto automáticamente, usar process.env.PORT directamente
+  const port = process.env.PORT ? parseInt(process.env.PORT, 10) : (configService.get<number>('PORT') || 3000);
   const corsOrigin = configService.get<string>('CORS_ORIGIN') || '*';
 
   // Habilitar CORS
