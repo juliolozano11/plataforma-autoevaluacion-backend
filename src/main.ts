@@ -33,6 +33,15 @@ async function bootstrap() {
   const reflector = app.get(Reflector);
   app.useGlobalGuards(new JwtAuthGuard(reflector));
 
+  // Health check en la raíz (antes del prefijo)
+  app.getHttpAdapter().get('/', (req, res) => {
+    res.json({
+      message: 'API de Evaluación de Empleabilidad',
+      status: 'running',
+      docs: '/api/docs',
+    });
+  });
+
   // Prefijo global para API
   app.setGlobalPrefix('api');
 
