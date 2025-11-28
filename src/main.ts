@@ -11,11 +11,11 @@ async function bootstrap() {
   // Obtener configuración
   const configService = app.get(ConfigService);
   const port = configService.get<number>('PORT') || 3000;
-  const corsOrigin = configService.get<string>('CORS_ORIGIN') || 'http://localhost:3001';
+  const corsOrigin = configService.get<string>('CORS_ORIGIN') || '*';
 
   // Habilitar CORS
   app.enableCors({
-    origin: corsOrigin,
+    origin: corsOrigin === '*' ? true : corsOrigin,
     credentials: true,
   });
 
