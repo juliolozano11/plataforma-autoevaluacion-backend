@@ -33,8 +33,9 @@ async function bootstrap() {
   const reflector = app.get(Reflector);
   app.useGlobalGuards(new JwtAuthGuard(reflector));
 
-  // Health check en la raíz (antes del prefijo)
-  app.getHttpAdapter().get('/', (req, res) => {
+  // Health check en la raíz ANTES del prefijo global
+  const httpAdapter = app.getHttpAdapter();
+  httpAdapter.get('/', (req: any, res: any) => {
     res.json({
       message: 'API de Evaluación de Empleabilidad',
       status: 'running',
