@@ -20,6 +20,20 @@ async function bootstrap() {
     credentials: true,
   });
 
+  // Health check en la raíz usando middleware de Express directamente
+  // Esto DEBE estar ANTES del prefijo global para que funcione
+  app.use((req: any, res: any, next: any) => {
+    if (req.path === '/' && req.method === 'GET') {
+      return res.status(200).json({
+        message: 'API de Evaluación de Empleabilidad',
+        status: 'running',
+        docs: '/api/docs',
+        timestamp: new Date().toISOString(),
+      });
+    }
+    next();
+  });
+
   // Validación global
   app.useGlobalPipes(
     new ValidationPipe({
@@ -29,22 +43,12 @@ async function bootstrap() {
     }),
   );
 
-  // Guard global de autenticación (con soporte para rutas públicas)
-  const reflector = app.get(Reflector);
-  app.useGlobalGuards(new JwtAuthGuard(reflector));
-
-  // Health check en la raíz ANTES del prefijo global
-  const httpAdapter = app.getHttpAdapter();
-  httpAdapter.get('/', (req: any, res: any) => {
-    res.json({
-      message: 'API de Evaluación de Empleabilidad',
-      status: 'running',
-      docs: '/api/docs',
-    });
-  });
-
   // Prefijo global para API
   app.setGlobalPrefix('api');
+
+  // Guard global de autenticación (después del prefijo para que funcione correctamente)
+  const reflector = app.get(Reflector);
+  app.useGlobalGuards(new JwtAuthGuard(reflector));
 
   // Configuración de Swagger
   const config = new DocumentBuilder()
@@ -81,9 +85,19 @@ async function bootstrap() {
     },
   });
 
-  await app.listen(port, '0.0.0.0');
-  console.log(`🚀 Servidor corriendo en http://0.0.0.0:${port}/api`);
-  console.log(`📚 Swagger disponible en http://0.0.0.0:${port}/api/docs`);
-  console.log(`📦 Base de datos: ${configService.get<string>('database.uri')?.replace(/\/\/.*@/, '//***:***@') || 'No configurada'}`);
+  try {
+    await app.listen(port, '0.0.0.0');
+    console.log(`🚀 Servidor corriendo en http://0.0.0.0:${port}/api`);
+    console.log(`📚 Swagger disponible en http://0.0.0.0:${port}/api/docs`);
+    console.log(`📦 Base de datos: ${configService.get<string>('database.uri')?.replace(/\/\/.*@/, '//***:***@') || 'No configurada'}`);
+    console.log(`✅ Aplicación lista para recibir peticiones en el puerto ${port}`);
+  } catch (error) {
+    console.error('❌ Error al iniciar el servidor:', error);
+    process.exit(1);
+  }
 }
-bootstrap();
+
+bootstrap().catch((error) => {
+  console.error('❌ Error fatal al iniciar la aplicación:', error);
+  process.exit(1);
+});

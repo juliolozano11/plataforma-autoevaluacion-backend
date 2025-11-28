@@ -22,5 +22,23 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
 
     return super.canActivate(context);
   }
+
+  handleRequest(err: any, user: any, info: any, context: ExecutionContext) {
+    // Si hay un error o no hay usuario, lanzar excepción solo si no es ruta pública
+    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+
+    if (isPublic) {
+      return user || null;
+    }
+
+    if (err || !user) {
+      throw err || new Error('No autorizado');
+    }
+
+    return user;
+  }
 }
 
