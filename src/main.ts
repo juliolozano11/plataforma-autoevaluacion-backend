@@ -6,7 +6,9 @@ import { AppModule } from './app.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    rawBody: false,
+  });
   
   // Obtener configuración
   const configService = app.get(ConfigService);
@@ -14,24 +16,25 @@ async function bootstrap() {
   const port = process.env.PORT ? parseInt(process.env.PORT, 10) : (configService.get<number>('PORT') || 3000);
   const corsOrigin = configService.get<string>('CORS_ORIGIN') || '*';
 
+  // Health check en la raíz - DEBE estar ANTES de cualquier otra configuración
+  // Usar el adaptador HTTP directamente para evitar el prefijo y guards
+  const httpAdapter = app.getHttpAdapter();
+  const instance = httpAdapter.getInstance();
+  instance.get('/', (req: any, res: any) => {
+    console.log('✅ Health check recibido en /');
+    res.status(200).json({
+      message: 'API de Evaluación de Empleabilidad',
+      status: 'running',
+      docs: '/api/docs',
+      timestamp: new Date().toISOString(),
+    });
+  });
+  console.log('✅ Health check route registrado en /');
+
   // Habilitar CORS
   app.enableCors({
     origin: corsOrigin === '*' ? true : corsOrigin,
     credentials: true,
-  });
-
-  // Health check en la raíz usando middleware de Express directamente
-  // Esto DEBE estar ANTES del prefijo global para que funcione
-  app.use((req: any, res: any, next: any) => {
-    if (req.path === '/' && req.method === 'GET') {
-      return res.status(200).json({
-        message: 'API de Evaluación de Empleabilidad',
-        status: 'running',
-        docs: '/api/docs',
-        timestamp: new Date().toISOString(),
-      });
-    }
-    next();
   });
 
   // Validación global
