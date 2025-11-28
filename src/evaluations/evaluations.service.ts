@@ -6,7 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { FilterQuery, Model, Types } from 'mongoose';
 import { EvaluationConfigService } from '../evaluation-config/evaluation-config.service';
 import { QuestionsService } from '../questions/questions.service';
 import { Answer, AnswerDocument } from '../schemas/answer.schema';
@@ -148,7 +148,7 @@ export class EvaluationsService {
     const scaleValue =
       typeof submitAnswerDto.value === 'number'
         ? submitAnswerDto.value
-        : parseFloat(submitAnswerDto.value);
+        : parseFloat(String(submitAnswerDto.value));
 
     if (
       !isNaN(scaleValue) &&
@@ -273,7 +273,7 @@ export class EvaluationsService {
   }
 
   async findOne(id: string, userId?: string): Promise<EvaluationDocument> {
-    const query: any = { _id: id };
+    const query: FilterQuery<EvaluationDocument> = { _id: id };
     if (userId) {
       query.userId = userId;
     }
