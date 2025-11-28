@@ -28,6 +28,13 @@ export class Question {
   @Prop({ type: Object, required: false })
   correctAnswer?: any; // Respuesta correcta (opcional)
 
+  // Configuración para preguntas de escala (Likert)
+  @Prop({ type: Number, default: 1 })
+  minScale?: number; // Valor mínimo de la escala (por defecto 1)
+
+  @Prop({ type: Number, default: 10 })
+  maxScale?: number; // Valor máximo de la escala (por defecto 10)
+
   @Prop({ type: Number, required: true, min: 0, default: 1 })
   points: number;
 

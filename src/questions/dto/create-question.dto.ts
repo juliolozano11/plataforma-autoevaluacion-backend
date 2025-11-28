@@ -45,6 +45,28 @@ export class CreateQuestionDto {
   correctAnswer?: any;
 
   @ApiProperty({
+    example: 1,
+    description: 'Valor mínimo de la escala para preguntas tipo scale (Likert)',
+    required: false,
+    default: 1,
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  minScale?: number;
+
+  @ApiProperty({
+    example: 10,
+    description: 'Valor máximo de la escala para preguntas tipo scale (Likert)',
+    required: false,
+    default: 10,
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  maxScale?: number;
+
+  @ApiProperty({
     example: 5,
     description: 'Puntos que vale la pregunta',
     minimum: 0,

@@ -3,7 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Evaluation, EvaluationDocument, EvaluationStatus, EvaluationLevel } from '../schemas/evaluation.schema';
 import { Answer, AnswerDocument } from '../schemas/answer.schema';
-import { Question, QuestionDocument } from '../schemas/question.schema';
+import { Question, QuestionDocument, QuestionType } from '../schemas/question.schema';
 import { CreateEvaluationDto } from './dto/create-evaluation.dto';
 import { SubmitAnswerDto } from './dto/submit-answer.dto';
 import { EvaluationConfigService } from '../evaluation-config/evaluation-config.service';
@@ -92,12 +92,22 @@ export class EvaluationsService {
     // Verificar que la pregunta pertenece a un cuestionario de la sección de la evaluación
     // (Esto requeriría una consulta adicional, por simplicidad asumimos que está correcto)
 
-    // Calcular score si hay respuesta correcta
+    // TODAS las preguntas son tipo Likert (scale) - el admin configura todo
+    // Calcular score basado en la escala configurada por el admin
     let score = 0;
-    if (question.correctAnswer !== undefined) {
-      if (this.compareAnswers(submitAnswerDto.value, question.correctAnswer)) {
-        score = question.points;
-      }
+    
+    const minScale = question.minScale ?? 1;
+    const maxScale = question.maxScale ?? 10;
+    
+    const scaleValue = typeof submitAnswerDto.value === 'number' 
+      ? submitAnswerDto.value 
+      : parseFloat(submitAnswerDto.value);
+    
+    if (!isNaN(scaleValue) && scaleValue >= minScale && scaleValue <= maxScale) {
+      // Calcular puntos proporcionales: ((valor - min) / (max - min)) * puntos de la pregunta
+      // Esto asegura que el valor mínimo da 0 puntos y el máximo da puntos completos
+      const normalizedValue = (scaleValue - minScale) / (maxScale - minScale);
+      score = normalizedValue * question.points;
     }
 
     // Crear o actualizar respuesta

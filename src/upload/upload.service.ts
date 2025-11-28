@@ -9,8 +9,8 @@ import { Readable } from 'stream';
 interface QuestionRow {
   text: string;
   type: QuestionType;
-  options?: string[];
-  correctAnswer?: string;
+  minScale?: number;
+  maxScale?: number;
   points: number;
   order: number;
 }
@@ -53,8 +53,8 @@ export class UploadService {
           }
         });
 
-        // Validar y mapear datos
-        if (rowData.text && rowData.type) {
+        // Validar y mapear datos (type ya no es requerido, todas son scale)
+        if (rowData.text) {
           const question: QuestionRow = {
             text: rowData.text.trim(),
             type: this.normalizeType(rowData.type),
@@ -62,15 +62,21 @@ export class UploadService {
             order: parseInt(rowData.order) || rowIndex,
           };
 
-          // Procesar opciones si es multiple_choice
-          if (question.type === QuestionType.MULTIPLE_CHOICE && rowData.options) {
-            question.options = rowData.options.split(',').map((opt: string) => opt.trim());
+          // Procesar configuración de escala (TODAS las preguntas son tipo scale)
+          if (rowData.minscale) {
+            question.minScale = parseInt(rowData.minscale) || 1;
+          } else {
+            question.minScale = 1; // Valor por defecto
           }
-
-          // Procesar respuesta correcta si existe
-          if (rowData.correctanswer) {
-            question.correctAnswer = rowData.correctanswer.trim();
+          
+          if (rowData.maxscale) {
+            question.maxScale = parseInt(rowData.maxscale) || 10;
+          } else {
+            question.maxScale = 10; // Valor por defecto
           }
+          
+          // Asegurar que todas las preguntas sean tipo scale
+          question.type = QuestionType.SCALE;
 
           questions.push(question);
         }
@@ -81,14 +87,14 @@ export class UploadService {
         throw new BadRequestException('No se encontraron preguntas válidas en el archivo');
       }
 
-        // Crear preguntas en bulk
+        // Crear preguntas en bulk - TODAS son tipo scale
         const created = await this.questionsService.bulkCreate({
           questionnaireId,
           questions: questions.map(q => ({
             text: q.text,
-            type: q.type,
-            options: q.options,
-            correctAnswer: q.correctAnswer,
+            type: QuestionType.SCALE, // Todas son tipo scale
+            minScale: q.minScale ?? 1,
+            maxScale: q.maxScale ?? 10,
             points: q.points,
             order: q.order,
           })),
@@ -125,22 +131,25 @@ export class UploadService {
                 normalizedRow[key.toLowerCase().trim()] = row[key];
               });
 
-              if (normalizedRow.text && normalizedRow.type) {
+              if (normalizedRow.text) {
                 const question: QuestionRow = {
                   text: normalizedRow.text.trim(),
-                  type: this.normalizeType(normalizedRow.type),
+                  type: QuestionType.SCALE, // Todas son tipo scale
                   points: parseInt(normalizedRow.points) || 1,
                   order: parseInt(normalizedRow.order) || questions.length + 1,
                 };
 
-                // Procesar opciones si es multiple_choice
-                if (question.type === QuestionType.MULTIPLE_CHOICE && normalizedRow.options) {
-                  question.options = normalizedRow.options.split(',').map((opt: string) => opt.trim());
+                // Procesar configuración de escala
+                if (normalizedRow.minscale) {
+                  question.minScale = parseInt(normalizedRow.minscale) || 1;
+                } else {
+                  question.minScale = 1; // Valor por defecto
                 }
-
-                // Procesar respuesta correcta si existe
-                if (normalizedRow.correctanswer) {
-                  question.correctAnswer = normalizedRow.correctanswer.trim();
+                
+                if (normalizedRow.maxscale) {
+                  question.maxScale = parseInt(normalizedRow.maxscale) || 10;
+                } else {
+                  question.maxScale = 10; // Valor por defecto
                 }
 
                 questions.push(question);
@@ -153,14 +162,14 @@ export class UploadService {
               }
 
               try {
-                // Crear preguntas en bulk
+                // Crear preguntas en bulk - TODAS son tipo scale
                 const created = await this.questionsService.bulkCreate({
                   questionnaireId,
                   questions: questions.map(q => ({
                     text: q.text,
-                    type: q.type,
-                    options: q.options,
-                    correctAnswer: q.correctAnswer,
+                    type: QuestionType.SCALE, // Todas son tipo scale
+                    minScale: q.minScale ?? 1,
+                    maxScale: q.maxScale ?? 10,
                     points: q.points,
                     order: q.order,
                   })),
@@ -187,30 +196,18 @@ export class UploadService {
   }
 
   private normalizeType(type: string): QuestionType {
-    const normalized = type.toLowerCase().trim();
-    
-    if (normalized.includes('multiple') || normalized.includes('opcion') || normalized === 'mc') {
-      return QuestionType.MULTIPLE_CHOICE;
-    }
-    if (normalized.includes('scale') || normalized.includes('escala') || normalized === 'sc') {
-      return QuestionType.SCALE;
-    }
-    if (normalized.includes('text') || normalized.includes('texto') || normalized === 'tx') {
-      return QuestionType.TEXT;
-    }
-
-    // Por defecto, asumir texto
-    return QuestionType.TEXT;
+    // TODAS las preguntas son tipo scale (Likert)
+    return QuestionType.SCALE;
   }
 
   getExpectedFormat(format: 'excel' | 'csv'): any {
     const columns = [
       { name: 'text', description: 'Texto de la pregunta (requerido)' },
-      { name: 'type', description: 'Tipo: multiple_choice, scale o text (requerido)' },
-      { name: 'options', description: 'Opciones separadas por coma (solo para multiple_choice)' },
-      { name: 'correctAnswer', description: 'Respuesta correcta (opcional)' },
-      { name: 'points', description: 'Puntos (default: 1)' },
-      { name: 'order', description: 'Orden (default: secuencial)' },
+      { name: 'type', description: 'Tipo: siempre debe ser "scale" (Likert)' },
+      { name: 'minScale', description: 'Valor mínimo de la escala (default: 1)' },
+      { name: 'maxScale', description: 'Valor máximo de la escala (default: 10)' },
+      { name: 'points', description: 'Puntos que vale la pregunta (default: 1)' },
+      { name: 'order', description: 'Orden de la pregunta (default: secuencial)' },
     ];
 
     return {
