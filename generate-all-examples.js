@@ -62,7 +62,7 @@ const comunicacionEfectiva = [
     text: '¿Qué tan efectivo consideras que eres al escuchar activamente a tus compañeros?',
     type: 'scale',
     options: '',
-    correctAnswer: '7',
+    correctAnswer: '',
     points: 5,
     order: 2,
   },
@@ -86,14 +86,15 @@ const comunicacionEfectiva = [
     text: '¿Qué tan importante consideras que es la comunicación no verbal (gestos, postura) en una presentación?',
     type: 'scale',
     options: '',
-    correctAnswer: '8',
+    correctAnswer: '',
     points: 5,
     order: 5,
   },
   {
     text: '¿Cómo manejas los malentendidos en la comunicación con tus compañeros?',
     type: 'multiple_choice',
-    options: 'Los evito,Los aclaro inmediatamente,Espero a que se resuelvan solos,Los discuto en privado',
+    options:
+      'Los evito,Los aclaro inmediatamente,Espero a que se resuelvan solos,Los discuto en privado',
     correctAnswer: 'Los aclaro inmediatamente',
     points: 6,
     order: 6,
@@ -106,14 +107,15 @@ const resolucionProblemas = [
     text: '¿Qué tan rápido identificas la raíz de un problema?',
     type: 'scale',
     options: '',
-    correctAnswer: '7',
+    correctAnswer: '',
     points: 5,
     order: 1,
   },
   {
     text: 'Cuando enfrentas un problema complejo, ¿cuál es tu primer paso?',
     type: 'multiple_choice',
-    options: 'Analizar el problema,Consultar con otros,Buscar soluciones rápidas,Evitar el problema',
+    options:
+      'Analizar el problema,Consultar con otros,Buscar soluciones rápidas,Evitar el problema',
     correctAnswer: 'Analizar el problema',
     points: 6,
     order: 2,
@@ -138,7 +140,7 @@ const resolucionProblemas = [
     text: '¿Qué tan creativo consideras que eres al buscar soluciones alternativas?',
     type: 'scale',
     options: '',
-    correctAnswer: '6',
+    correctAnswer: '',
     points: 5,
     order: 5,
   },
@@ -158,14 +160,15 @@ const herramientasDigitales = [
     text: '¿Qué tan cómodo te sientes usando herramientas de ofimática (Word, Excel, PowerPoint)?',
     type: 'scale',
     options: '',
-    correctAnswer: '8',
+    correctAnswer: '',
     points: 5,
     order: 1,
   },
   {
     text: '¿Qué tipo de herramientas digitales usas con más frecuencia?',
     type: 'multiple_choice',
-    options: 'Ofimática,Programación,Comunicación,Multimedia,Todas las anteriores',
+    options:
+      'Ofimática,Programación,Comunicación,Multimedia,Todas las anteriores',
     correctAnswer: 'Todas las anteriores',
     points: 5,
     order: 2,
@@ -182,7 +185,7 @@ const herramientasDigitales = [
     text: '¿Qué tan rápido aprendes a usar una nueva herramienta digital?',
     type: 'scale',
     options: '',
-    correctAnswer: '7',
+    correctAnswer: '',
     points: 5,
     order: 4,
   },
@@ -197,7 +200,8 @@ const herramientasDigitales = [
   {
     text: '¿Cómo te mantienes actualizado sobre nuevas herramientas digitales?',
     type: 'multiple_choice',
-    options: 'Cursos en línea,Foros y comunidades,Prueba y error,No me actualizo',
+    options:
+      'Cursos en línea,Foros y comunidades,Prueba y error,No me actualizo',
     correctAnswer: 'Cursos en línea',
     points: 5,
     order: 6,
@@ -206,17 +210,40 @@ const herramientasDigitales = [
 
 // Crear los tres archivos
 Promise.all([
-  createExcelFile('preguntas-comunicacion-efectiva.xlsx', comunicacionEfectiva, 'Comunicación Efectiva'),
-  createExcelFile('preguntas-resolucion-problemas.xlsx', resolucionProblemas, 'Resolución de Problemas'),
-  createExcelFile('preguntas-herramientas-digitales.xlsx', herramientasDigitales, 'Uso de Herramientas Digitales'),
+  createExcelFile(
+    'preguntas-comunicacion-efectiva.xlsx',
+    comunicacionEfectiva,
+    'Comunicación Efectiva',
+  ),
+  createExcelFile(
+    'preguntas-resolucion-problemas.xlsx',
+    resolucionProblemas,
+    'Resolución de Problemas',
+  ),
+  createExcelFile(
+    'preguntas-herramientas-digitales.xlsx',
+    herramientasDigitales,
+    'Uso de Herramientas Digitales',
+  ),
 ])
   .then(() => {
     console.log('✅ Archivos Excel creados exitosamente:');
-    console.log('   📄 preguntas-comunicacion-efectiva.xlsx (' + comunicacionEfectiva.length + ' preguntas)');
-    console.log('   📄 preguntas-resolucion-problemas.xlsx (' + resolucionProblemas.length + ' preguntas)');
-    console.log('   📄 preguntas-herramientas-digitales.xlsx (' + herramientasDigitales.length + ' preguntas)');
+    console.log(
+      '   📄 preguntas-comunicacion-efectiva.xlsx (' +
+        comunicacionEfectiva.length +
+        ' preguntas)',
+    );
+    console.log(
+      '   📄 preguntas-resolucion-problemas.xlsx (' +
+        resolucionProblemas.length +
+        ' preguntas)',
+    );
+    console.log(
+      '   📄 preguntas-herramientas-digitales.xlsx (' +
+        herramientasDigitales.length +
+        ' preguntas)',
+    );
   })
   .catch((error) => {
     console.error('❌ Error al crear los archivos:', error);
   });
-
