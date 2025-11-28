@@ -1,9 +1,10 @@
-import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ConflictException, ForbiddenException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Evaluation, EvaluationDocument, EvaluationStatus, EvaluationLevel } from '../schemas/evaluation.schema';
 import { Answer, AnswerDocument } from '../schemas/answer.schema';
 import { Question, QuestionDocument, QuestionType } from '../schemas/question.schema';
+import { Section, SectionDocument } from '../schemas/section.schema';
 import { CreateEvaluationDto } from './dto/create-evaluation.dto';
 import { SubmitAnswerDto } from './dto/submit-answer.dto';
 import { EvaluationConfigService } from '../evaluation-config/evaluation-config.service';
@@ -15,11 +16,21 @@ export class EvaluationsService {
     @InjectModel(Evaluation.name) private evaluationModel: Model<EvaluationDocument>,
     @InjectModel(Answer.name) private answerModel: Model<AnswerDocument>,
     @InjectModel(Question.name) private questionModel: Model<QuestionDocument>,
+    @InjectModel(Section.name) private sectionModel: Model<SectionDocument>,
     private evaluationConfigService: EvaluationConfigService,
     private questionsService: QuestionsService,
   ) {}
 
   async create(userId: string, createEvaluationDto: CreateEvaluationDto): Promise<EvaluationDocument> {
+    // Verificar que la sección existe y está activa
+    const section = await this.sectionModel.findById(createEvaluationDto.sectionId).exec();
+    if (!section) {
+      throw new NotFoundException('Sección no encontrada');
+    }
+    if (!section.isActive) {
+      throw new ForbiddenException('Esta sección no está disponible para evaluaciones en este momento');
+    }
+
     // Verificar si ya existe una evaluación para este usuario y sección
     const existing = await this.evaluationModel.findOne({
       userId,
