@@ -35,6 +35,18 @@ export class EvaluationsController {
     return this.evaluationsService.startEvaluation(user._id || user.id, id);
   }
 
+  @Get()
+  @ApiOperation({ summary: 'Obtener evaluaciones del usuario autenticado' })
+  @ApiQuery({ name: 'sectionId', required: false, description: 'Filtrar por ID de sección' })
+  @ApiResponse({ status: 200, description: 'Lista de evaluaciones' })
+  @ApiResponse({ status: 401, description: 'No autorizado' })
+  async findByUser(@CurrentUser() user: any, @Query('sectionId') sectionId?: string) {
+    if (sectionId) {
+      return this.evaluationsService.findByUserAndSection(user._id || user.id, sectionId);
+    }
+    return this.evaluationsService.findByUser(user._id || user.id);
+  }
+
   @Post(':id/answers')
   @ApiOperation({ summary: 'Enviar una respuesta a una pregunta' })
   @ApiParam({ name: 'id', description: 'ID de la evaluación' })
@@ -49,6 +61,16 @@ export class EvaluationsController {
     return this.evaluationsService.submitAnswer(user._id || user.id, id, submitAnswerDto);
   }
 
+  @Post(':id/start')
+  @ApiOperation({ summary: 'Iniciar una evaluación' })
+  @ApiParam({ name: 'id', description: 'ID de la evaluación' })
+  @ApiResponse({ status: 200, description: 'Evaluación iniciada exitosamente' })
+  @ApiResponse({ status: 401, description: 'No autorizado' })
+  @ApiResponse({ status: 404, description: 'Evaluación no encontrada' })
+  async startEvaluation(@CurrentUser() user: any, @Param('id') id: string) {
+    return this.evaluationsService.startEvaluation(user._id || user.id, id);
+  }
+
   @Post(':id/complete')
   @ApiOperation({ summary: 'Completar una evaluación' })
   @ApiParam({ name: 'id', description: 'ID de la evaluación' })
@@ -57,18 +79,6 @@ export class EvaluationsController {
   @ApiResponse({ status: 404, description: 'Evaluación no encontrada' })
   async completeEvaluation(@CurrentUser() user: any, @Param('id') id: string) {
     return this.evaluationsService.completeEvaluation(user._id || user.id, id);
-  }
-
-  @Get()
-  @ApiOperation({ summary: 'Obtener evaluaciones del usuario autenticado' })
-  @ApiQuery({ name: 'sectionId', required: false, description: 'Filtrar por ID de sección' })
-  @ApiResponse({ status: 200, description: 'Lista de evaluaciones' })
-  @ApiResponse({ status: 401, description: 'No autorizado' })
-  async findByUser(@CurrentUser() user: any, @Query('sectionId') sectionId?: string) {
-    if (sectionId) {
-      return this.evaluationsService.findByUserAndSection(user._id || user.id, sectionId);
-    }
-    return this.evaluationsService.findByUser(user._id || user.id);
   }
 
   @Get(':id')
