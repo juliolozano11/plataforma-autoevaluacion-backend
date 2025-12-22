@@ -40,11 +40,15 @@ export class QuestionnairesController {
 
   @Get('active')
   @Public()
-  async findActive(@Query('sectionId') sectionId: string) {
-    if (!sectionId) {
-      return this.questionnairesService.findAll();
+  @ApiOperation({ summary: 'Obtener cuestionarios activos' })
+  @ApiQuery({ name: 'sectionId', required: false, description: 'Filtrar por ID de sección' })
+  @ApiResponse({ status: 200, description: 'Lista de cuestionarios activos' })
+  async findActive(@Query('sectionId') sectionId?: string) {
+    if (sectionId) {
+      return this.questionnairesService.findActiveBySection(sectionId);
     }
-    return this.questionnairesService.findActiveBySection(sectionId);
+    // Si no hay sectionId, devolver todos los cuestionarios activos
+    return this.questionnairesService.findActive();
   }
 
   @Get(':id')

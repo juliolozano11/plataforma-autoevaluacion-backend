@@ -28,6 +28,14 @@ export class QuestionnairesService {
       .exec();
   }
 
+  async findActive(): Promise<QuestionnaireDocument[]> {
+    return this.questionnaireModel
+      .find({ isActive: true })
+      .populate('sectionId')
+      .sort({ createdAt: -1 })
+      .exec();
+  }
+
   async findActiveBySection(sectionId: string): Promise<QuestionnaireDocument[]> {
     return this.questionnaireModel
       .find({ sectionId, isActive: true })

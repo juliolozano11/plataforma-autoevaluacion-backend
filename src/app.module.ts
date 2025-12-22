@@ -12,6 +12,7 @@ import { QuestionnairesModule } from './questionnaires/questionnaires.module';
 import { QuestionsModule } from './questions/questions.module';
 import { ReportsModule } from './reports/reports.module';
 import { SectionsModule } from './sections/sections.module';
+import { CareersModule } from './careers/careers.module';
 import { SeedModule } from './seed/seed.module';
 import { UploadModule } from './upload/upload.module';
 import { UsersModule } from './users/users.module';
@@ -50,6 +51,7 @@ import { UsersModule } from './users/users.module';
     AuthModule,
     UsersModule,
     SectionsModule,
+    CareersModule,
     QuestionnairesModule,
     QuestionsModule,
     EvaluationConfigModule,

@@ -1,4 +1,5 @@
 export * from './user.schema';
+export * from './career.schema';
 export * from './section.schema';
 export * from './questionnaire.schema';
 export * from './question.schema';

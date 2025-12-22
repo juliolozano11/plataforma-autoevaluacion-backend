@@ -67,9 +67,20 @@ export class EvaluationConfigService {
   }
 
   async calculateLevel(sectionId: string, score: number, maxScore: number): Promise<string> {
-    const config = await this.findBySection(sectionId);
+    let config = await this.findBySection(sectionId);
+    
+    // Si no hay configuración activa, usar configuración por defecto
+    const defaultConfig = {
+      muyBajo: { min: 0, max: 20 },
+      bajo: { min: 21, max: 40 },
+      intermedio: { min: 41, max: 60 },
+      alto: { min: 61, max: 80 },
+      muyAlto: { min: 81, max: 100 },
+    };
+
     if (!config) {
-      throw new NotFoundException('No hay configuración para esta sección');
+      console.log(`[DEBUG] No se encontró configuración activa para la sección ${sectionId}, usando configuración por defecto`);
+      config = defaultConfig as EvaluationConfigDocument;
     }
 
     // Calcular porcentaje

@@ -23,6 +23,7 @@ async function bootstrap() {
 
   console.log('🔧 process.env.PORT =', process.env.PORT);
   console.log('🔧 Puerto efectivo =', port);
+  console.log('🔧 CORS Origin =', corsOrigin);
 
   // Health check en la raíz - fuera de Nest, sin guards ni prefijos
   const httpAdapter = app.getHttpAdapter();
@@ -38,11 +39,60 @@ async function bootstrap() {
   });
   console.log('✅ Health check route registrado en /');
 
+  // Configurar CORS
+  // En desarrollo, permitir múltiples orígenes comunes
+  const isDevelopment = process.env.NODE_ENV !== 'production';
+  let allowedOrigins: string[] | boolean | ((origin: string, callback: (err: Error | null, allow?: boolean) => void) => void);
+  
+  if (corsOrigin === '*') {
+    allowedOrigins = true; // Permitir todos los orígenes
+  } else if (isDevelopment) {
+    // En desarrollo, permitir localhost en diferentes puertos
+    const devOrigins = [
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'http://127.0.0.1:3000',
+      'http://127.0.0.1:3001',
+      corsOrigin, // También incluir el origen configurado
+    ].filter(Boolean);
+    
+    // Usar función para permitir cualquier origen localhost en desarrollo
+    allowedOrigins = (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+      // Permitir requests sin origin (como Postman, curl, etc.)
+      if (!origin) {
+        return callback(null, true);
+      }
+      
+      // Permitir cualquier localhost o 127.0.0.1
+      if (origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:')) {
+        return callback(null, true);
+      }
+      
+      // Permitir orígenes específicos configurados
+      if (devOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      
+      callback(new Error('Not allowed by CORS'));
+    };
+  } else {
+    // En producción, usar solo el origen configurado
+    allowedOrigins = corsOrigin.split(',').map((origin) => origin.trim());
+  }
+
   // Habilitar CORS
   app.enableCors({
-    origin: corsOrigin === '*' ? true : corsOrigin,
+    origin: allowedOrigins,
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+    exposedHeaders: ['Content-Type'],
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
   });
+  
+  console.log('🔧 CORS configurado para desarrollo:', isDevelopment);
+  console.log('🔧 Orígenes permitidos:', corsOrigin === '*' ? 'Todos (*)' : (isDevelopment ? 'Localhost en cualquier puerto' : corsOrigin));
 
   // Validación global
   app.useGlobalPipes(

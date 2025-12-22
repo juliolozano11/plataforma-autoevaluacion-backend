@@ -104,5 +104,15 @@ export class ReportsController {
   async getLevelsDistributionByCompetence() {
     return this.reportsService.getLevelsDistributionByCompetence();
   }
+
+  // Endpoint de debug temporal para diagnosticar problemas
+  @Get('debug/evaluations')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Debug: Ver todas las evaluaciones (Solo Admin)' })
+  @ApiQuery({ name: 'sectionId', required: false, description: 'Filtrar por ID de sección' })
+  async debugEvaluations(@Query('sectionId') sectionId?: string) {
+    return this.reportsService.debugEvaluations(sectionId);
+  }
 }
 

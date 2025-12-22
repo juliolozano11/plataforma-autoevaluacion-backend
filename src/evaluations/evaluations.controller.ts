@@ -1,26 +1,13 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Param,
-  Post,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
-import {
-  ApiBearerAuth,
-  ApiOperation,
-  ApiParam,
-  ApiQuery,
-  ApiResponse,
-  ApiTags,
-} from '@nestjs/swagger';
-import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { UserRole } from '../schemas/user.schema';
+import { Controller, Get, Post, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiQuery } from '@nestjs/swagger';
+import { EvaluationsService } from './evaluations.service';
 import { CreateEvaluationDto } from './dto/create-evaluation.dto';
 import { SubmitAnswerDto } from './dto/submit-answer.dto';
-import { EvaluationsService } from './evaluations.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { UserRole } from '../schemas/user.schema';
 
 @ApiTags('evaluations')
 @ApiBearerAuth('JWT-auth')
@@ -33,20 +20,27 @@ export class EvaluationsController {
   @ApiOperation({ summary: 'Crear una nueva evaluación' })
   @ApiResponse({ status: 201, description: 'Evaluación creada exitosamente' })
   @ApiResponse({ status: 401, description: 'No autorizado' })
-  @ApiResponse({
-    status: 409,
-    description: 'Ya existe una evaluación para esta sección',
-  })
-  async create(
-    @CurrentUser() user: any,
-    @Body() createEvaluationDto: CreateEvaluationDto,
-  ) {
-    return this.evaluationsService.create(
-      user._id || user.id,
-      createEvaluationDto,
-    );
+  @ApiResponse({ status: 409, description: 'Ya existe una evaluación para esta sección' })
+  async create(@CurrentUser() user: any, @Body() createEvaluationDto: CreateEvaluationDto) {
+    return this.evaluationsService.create(user._id || user.id, createEvaluationDto);
   }
 
+  @Get()
+  @ApiOperation({ summary: 'Obtener evaluaciones del usuario autenticado' })
+  @ApiQuery({ name: 'sectionId', required: false, description: 'Filtrar por ID de sección' })
+  @ApiResponse({ status: 200, description: 'Lista de evaluaciones' })
+  @ApiResponse({ status: 401, description: 'No autorizado' })
+  async findByUser(@CurrentUser() user: any, @Query('sectionId') sectionId?: string) {
+    if (sectionId) {
+      // Devolver todas las evaluaciones del usuario para esta sección (puede haber múltiples por cuestionario)
+      const evaluations = await this.evaluationsService.findByUserAndSection(user._id || user.id, sectionId);
+      return evaluations;
+    }
+    return this.evaluationsService.findByUser(user._id || user.id);
+  }
+
+  // Rutas específicas ANTES de la ruta genérica @Get(':id')
+  // Esto es importante para que NestJS no interprete "start", "answers", "complete" como IDs
   @Post(':id/start')
   @ApiOperation({ summary: 'Iniciar una evaluación' })
   @ApiParam({ name: 'id', description: 'ID de la evaluación' })
@@ -57,67 +51,56 @@ export class EvaluationsController {
     return this.evaluationsService.startEvaluation(user._id || user.id, id);
   }
 
-  @Get()
-  @ApiOperation({ summary: 'Obtener evaluaciones del usuario autenticado' })
-  @ApiQuery({
-    name: 'sectionId',
-    required: false,
-    description: 'Filtrar por ID de sección',
-  })
-  @ApiResponse({ status: 200, description: 'Lista de evaluaciones' })
-  @ApiResponse({ status: 401, description: 'No autorizado' })
-  async findByUser(
-    @CurrentUser() user: any,
-    @Query('sectionId') sectionId?: string,
-  ) {
-    if (sectionId) {
-      return this.evaluationsService.findByUserAndSection(
-        user._id || user.id,
-        sectionId,
-      );
-    }
-    return this.evaluationsService.findByUser(user._id || user.id);
-  }
-
   @Post(':id/answers')
   @ApiOperation({ summary: 'Enviar una respuesta a una pregunta' })
   @ApiParam({ name: 'id', description: 'ID de la evaluación' })
   @ApiResponse({ status: 200, description: 'Respuesta enviada exitosamente' })
   @ApiResponse({ status: 401, description: 'No autorizado' })
-  @ApiResponse({
-    status: 404,
-    description: 'Evaluación o pregunta no encontrada',
-  })
+  @ApiResponse({ status: 404, description: 'Evaluación o pregunta no encontrada' })
   async submitAnswer(
     @CurrentUser() user: any,
     @Param('id') id: string,
     @Body() submitAnswerDto: SubmitAnswerDto,
   ) {
-    return this.evaluationsService.submitAnswer(
-      user._id || user.id,
-      id,
-      submitAnswerDto,
-    );
+    console.log(`[DEBUG] Enviar respuesta - Evaluation ID: ${id}, Question ID: ${submitAnswerDto.questionId}, User: ${user._id || user.id}`);
+    try {
+      const result = await this.evaluationsService.submitAnswer(user._id || user.id, id, submitAnswerDto);
+      console.log(`[DEBUG] Respuesta enviada exitosamente`);
+      return result;
+    } catch (error) {
+      console.error(`[DEBUG] Error al enviar respuesta:`, error);
+      throw error;
+    }
   }
 
   @Post(':id/complete')
   @ApiOperation({ summary: 'Completar una evaluación' })
   @ApiParam({ name: 'id', description: 'ID de la evaluación' })
-  @ApiResponse({
-    status: 200,
-    description: 'Evaluación completada exitosamente',
-  })
+  @ApiResponse({ status: 200, description: 'Evaluación completada exitosamente' })
   @ApiResponse({ status: 401, description: 'No autorizado' })
   @ApiResponse({ status: 404, description: 'Evaluación no encontrada' })
   async completeEvaluation(@CurrentUser() user: any, @Param('id') id: string) {
-    return this.evaluationsService.completeEvaluation(user._id || user.id, id);
+    console.log(`[DEBUG] Completar evaluación - ID: ${id}, User: ${user._id || user.id}`);
+    try {
+      const result = await this.evaluationsService.completeEvaluation(user._id || user.id, id);
+      console.log(`[DEBUG] Evaluación completada exitosamente: ${result._id}`);
+      return result;
+    } catch (error) {
+      console.error(`[DEBUG] Error al completar evaluación:`, error);
+      throw error;
+    }
   }
 
+  // Ruta genérica al final - debe estar después de las rutas específicas
   @Get(':id')
+  @ApiOperation({ summary: 'Obtener una evaluación por ID' })
+  @ApiParam({ name: 'id', description: 'ID de la evaluación' })
+  @ApiResponse({ status: 200, description: 'Evaluación encontrada' })
+  @ApiResponse({ status: 401, description: 'No autorizado' })
+  @ApiResponse({ status: 404, description: 'Evaluación no encontrada' })
   async findOne(@CurrentUser() user: any, @Param('id') id: string) {
     // Los estudiantes solo pueden ver sus propias evaluaciones
-    const userId =
-      user.role === UserRole.ADMIN ? undefined : user._id || user.id;
+    const userId = user.role === UserRole.ADMIN ? undefined : (user._id || user.id);
     return this.evaluationsService.getEvaluationWithAnswers(id, userId);
   }
 }
