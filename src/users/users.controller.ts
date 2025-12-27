@@ -52,7 +52,8 @@ export class UsersController {
     if (career) {
       return this.usersService.findStudentsByCareer(career);
     }
-    return this.usersService.findAll();
+    // Si no hay filtros, devolver solo estudiantes activos
+    return this.usersService.findActiveStudents();
   }
 
   @Get(':id')

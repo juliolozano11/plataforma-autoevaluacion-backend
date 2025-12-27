@@ -46,12 +46,16 @@ export class UsersService {
     return this.userModel.find().exec();
   }
 
+  async findActiveStudents(): Promise<UserDocument[]> {
+    return this.userModel.find({ role: 'student', isActive: true }).exec();
+  }
+
   async findStudentsByCareer(career: string): Promise<UserDocument[]> {
-    return this.userModel.find({ role: 'student', career }).exec();
+    return this.userModel.find({ role: 'student', career, isActive: true }).exec();
   }
 
   async findStudentsByCourse(career: string, course: string): Promise<UserDocument[]> {
-    return this.userModel.find({ role: 'student', career, course }).exec();
+    return this.userModel.find({ role: 'student', career, course, isActive: true }).exec();
   }
 
   async update(id: string, updateData: Partial<UserDocument>): Promise<UserDocument> {

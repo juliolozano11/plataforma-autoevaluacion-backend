@@ -6,6 +6,7 @@ import { Evaluation, EvaluationSchema } from '../schemas/evaluation.schema';
 import { Answer, AnswerSchema } from '../schemas/answer.schema';
 import { User, UserSchema } from '../schemas/user.schema';
 import { Section, SectionSchema } from '../schemas/section.schema';
+import { Questionnaire, QuestionnaireSchema } from '../schemas/questionnaire.schema';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { Section, SectionSchema } from '../schemas/section.schema';
       { name: Answer.name, schema: AnswerSchema },
       { name: User.name, schema: UserSchema },
       { name: Section.name, schema: SectionSchema },
+      { name: Questionnaire.name, schema: QuestionnaireSchema },
     ]),
   ],
   controllers: [ReportsController],

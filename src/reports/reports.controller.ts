@@ -1,5 +1,6 @@
-import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Query, UseGuards, Res } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiQuery } from '@nestjs/swagger';
+import type { Response } from 'express';
 import { ReportsService } from './reports.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -36,6 +37,146 @@ export class ReportsController {
   @ApiResponse({ status: 403, description: 'No tienes permisos de administrador' })
   async getIndividualReportById(@Param('userId') userId: string) {
     return this.reportsService.getIndividualReport(userId);
+  }
+
+  // Exportar reporte general a Excel (debe ir antes de las rutas más generales)
+  @Get('export/general')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Exportar reporte general a Excel (Solo Admin)' })
+  @ApiResponse({ status: 200, description: 'Archivo Excel descargado' })
+  @ApiResponse({ status: 401, description: 'No autorizado' })
+  @ApiResponse({ status: 403, description: 'No tienes permisos de administrador' })
+  async exportGeneralReport(@Res() res: Response) {
+    try {
+      const workbook = await this.reportsService.exportGeneralReportToExcel();
+      const buffer = await workbook.xlsx.writeBuffer();
+
+      const filename = `reporte-general-${new Date().toISOString().split('T')[0]}.xlsx`;
+      
+      res.setHeader(
+        'Content-Type',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      );
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="${filename}"`,
+      );
+
+      return res.send(buffer);
+    } catch (error) {
+      console.error('Error al exportar reporte general:', error);
+      return res.status(500).json({
+        message: error instanceof Error ? error.message : 'Error al generar el reporte',
+        error: 'Internal Server Error',
+      });
+    }
+  }
+
+  // Exportar reporte grupal por carrera a Excel (debe ir antes de las rutas más generales)
+  @Get('export/group/career')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Exportar reporte grupal por carrera a Excel (Solo Admin)' })
+  @ApiQuery({ name: 'career', required: true, description: 'Nombre de la carrera' })
+  @ApiQuery({ name: 'sectionId', required: false, description: 'Filtrar por ID de sección' })
+  @ApiResponse({ status: 200, description: 'Archivo Excel descargado' })
+  @ApiResponse({ status: 401, description: 'No autorizado' })
+  @ApiResponse({ status: 403, description: 'No tienes permisos de administrador' })
+  async exportGroupReportByCareer(
+    @Query('career') career: string,
+    @Query('sectionId') sectionId: string | undefined,
+    @Res() res: Response,
+  ) {
+    try {
+      if (!career) {
+        return res.status(400).json({
+          message: 'El parámetro career es requerido',
+          error: 'Bad Request',
+        });
+      }
+
+      const workbook = await this.reportsService.exportGroupReportByCareerToExcel(
+        career,
+        sectionId,
+      );
+      const buffer = await workbook.xlsx.writeBuffer();
+
+      const safeCareer = career.replace(/[^a-zA-Z0-9-_]/g, '_');
+      const filename = `reporte-grupal-carrera-${safeCareer}-${new Date().toISOString().split('T')[0]}.xlsx`;
+
+      res.setHeader(
+        'Content-Type',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      );
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="${filename}"`,
+      );
+
+      return res.send(buffer);
+    } catch (error) {
+      console.error('Error al exportar reporte grupal por carrera:', error);
+      return res.status(500).json({
+        message: error instanceof Error ? error.message : 'Error al generar el reporte',
+        error: 'Internal Server Error',
+      });
+    }
+  }
+
+  // Exportar reporte grupal por curso a Excel (debe ir antes de las rutas más generales)
+  @Get('export/group/course')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Exportar reporte grupal por curso a Excel (Solo Admin)' })
+  @ApiQuery({ name: 'career', required: true, description: 'Nombre de la carrera' })
+  @ApiQuery({ name: 'course', required: true, description: 'Nombre del curso' })
+  @ApiQuery({ name: 'sectionId', required: false, description: 'Filtrar por ID de sección' })
+  @ApiResponse({ status: 200, description: 'Archivo Excel descargado' })
+  @ApiResponse({ status: 401, description: 'No autorizado' })
+  @ApiResponse({ status: 403, description: 'No tienes permisos de administrador' })
+  async exportGroupReportByCourse(
+    @Query('career') career: string,
+    @Query('course') course: string,
+    @Query('sectionId') sectionId: string | undefined,
+    @Res() res: Response,
+  ) {
+    try {
+      if (!career || !course) {
+        return res.status(400).json({
+          message: 'Los parámetros career y course son requeridos',
+          error: 'Bad Request',
+        });
+      }
+
+      const workbook = await this.reportsService.exportGroupReportByCourseToExcel(
+        career,
+        course,
+        sectionId,
+      );
+      const buffer = await workbook.xlsx.writeBuffer();
+
+      const safeCareer = career.replace(/[^a-zA-Z0-9-_]/g, '_');
+      const safeCourse = course.replace(/[^a-zA-Z0-9-_]/g, '_');
+      const filename = `reporte-grupal-curso-${safeCareer}-${safeCourse}-${new Date().toISOString().split('T')[0]}.xlsx`;
+
+      res.setHeader(
+        'Content-Type',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      );
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="${filename}"`,
+      );
+
+      return res.send(buffer);
+    } catch (error) {
+      console.error('Error al exportar reporte grupal por curso:', error);
+      return res.status(500).json({
+        message: error instanceof Error ? error.message : 'Error al generar el reporte',
+        error: 'Internal Server Error',
+      });
+    }
   }
 
   // Reporte grupal por carrera
@@ -114,5 +255,6 @@ export class ReportsController {
   async debugEvaluations(@Query('sectionId') sectionId?: string) {
     return this.reportsService.debugEvaluations(sectionId);
   }
+
 }
 
