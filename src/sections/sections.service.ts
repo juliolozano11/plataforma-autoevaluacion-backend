@@ -2,6 +2,8 @@ import { Injectable, NotFoundException, ConflictException } from '@nestjs/common
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Section, SectionDocument } from '../schemas/section.schema';
+import { Questionnaire, QuestionnaireDocument } from '../schemas/questionnaire.schema';
+import { Question, QuestionDocument } from '../schemas/question.schema';
 import { CreateSectionDto } from './dto/create-section.dto';
 import { UpdateSectionDto } from './dto/update-section.dto';
 
@@ -9,6 +11,8 @@ import { UpdateSectionDto } from './dto/update-section.dto';
 export class SectionsService {
   constructor(
     @InjectModel(Section.name) private sectionModel: Model<SectionDocument>,
+    @InjectModel(Questionnaire.name) private questionnaireModel: Model<QuestionnaireDocument>,
+    @InjectModel(Question.name) private questionModel: Model<QuestionDocument>,
   ) {}
 
   async create(createSectionDto: CreateSectionDto): Promise<SectionDocument> {
@@ -63,10 +67,25 @@ export class SectionsService {
   }
 
   async remove(id: string): Promise<void> {
-    const result = await this.sectionModel.findByIdAndDelete(id);
-    if (!result) {
+    // Verificar que la sección existe
+    const section = await this.sectionModel.findById(id);
+    if (!section) {
       throw new NotFoundException('Sección no encontrada');
     }
+
+    // Encontrar todos los cuestionarios asociados a esta sección
+    const questionnaires = await this.questionnaireModel.find({ sectionId: id }).exec();
+
+    // Para cada cuestionario, eliminar todas sus preguntas
+    for (const questionnaire of questionnaires) {
+      await this.questionModel.deleteMany({ questionnaireId: questionnaire._id }).exec();
+    }
+
+    // Eliminar todos los cuestionarios asociados a la sección
+    await this.questionnaireModel.deleteMany({ sectionId: id }).exec();
+
+    // Finalmente, eliminar la sección
+    await this.sectionModel.findByIdAndDelete(id).exec();
   }
 }
 
