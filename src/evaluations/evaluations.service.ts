@@ -208,22 +208,51 @@ export class EvaluationsService {
   }
 
   async findByUser(userId: string): Promise<EvaluationDocument[]> {
-    return this.evaluationModel
-      .find({ userId })
+    // Obtener todas las evaluaciones del usuario
+    const evaluations = await this.evaluationModel
+      .find({ userId, sectionId: { $ne: null } }) // Filtrar evaluaciones con sectionId no null
       .populate('sectionId')
       .populate('questionnaireId')
       .sort({ createdAt: -1 })
       .exec();
+
+    // Filtrar solo las evaluaciones que tienen una sección válida (que existe en la base de datos)
+    // Si sectionId está poblado pero es null, significa que la sección fue eliminada
+    return evaluations.filter((evaluation) => {
+      // Verificar que sectionId existe y no es null
+      if (!evaluation.sectionId) {
+        return false;
+      }
+      // Si sectionId está poblado, verificar que el objeto existe
+      // Si es un string, significa que no se pudo poblar (la sección no existe)
+      return typeof evaluation.sectionId === 'object' && evaluation.sectionId !== null;
+    });
   }
 
   async findByUserAndSection(userId: string, sectionId: string): Promise<EvaluationDocument[]> {
+    // Verificar que la sección existe antes de buscar evaluaciones
+    const section = await this.sectionModel.findById(sectionId).exec();
+    if (!section) {
+      // Si la sección no existe, retornar array vacío
+      return [];
+    }
+
     // Devolver todas las evaluaciones del usuario para esta sección (puede haber múltiples por cuestionario)
-    return this.evaluationModel
+    // Ya verificamos que la sección existe, así que solo buscamos por userId y sectionId
+    const evaluations = await this.evaluationModel
       .find({ userId, sectionId })
       .populate('sectionId')
       .populate('questionnaireId')
       .sort({ createdAt: -1 })
       .exec();
+
+    // Filtrar solo las evaluaciones que tienen una sección válida
+    return evaluations.filter((evaluation) => {
+      if (!evaluation.sectionId) {
+        return false;
+      }
+      return typeof evaluation.sectionId === 'object' && evaluation.sectionId !== null;
+    });
   }
 
   async findOne(id: string, userId?: string): Promise<EvaluationDocument> {
