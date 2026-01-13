@@ -179,6 +179,65 @@ export class ReportsController {
     }
   }
 
+  // Exportar reporte grupal por paralelo a Excel (debe ir antes de las rutas más generales)
+  @Get('export/group/parallel')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Exportar reporte grupal por paralelo a Excel (Solo Admin)' })
+  @ApiQuery({ name: 'career', required: true, description: 'Nombre de la carrera' })
+  @ApiQuery({ name: 'course', required: true, description: 'Nombre del curso' })
+  @ApiQuery({ name: 'parallel', required: true, description: 'Nombre del paralelo' })
+  @ApiQuery({ name: 'sectionId', required: false, description: 'Filtrar por ID de sección' })
+  @ApiResponse({ status: 200, description: 'Archivo Excel descargado' })
+  @ApiResponse({ status: 401, description: 'No autorizado' })
+  @ApiResponse({ status: 403, description: 'No tienes permisos de administrador' })
+  async exportGroupReportByParallel(
+    @Query('career') career: string,
+    @Query('course') course: string,
+    @Query('parallel') parallel: string,
+    @Query('sectionId') sectionId: string | undefined,
+    @Res() res: Response,
+  ) {
+    try {
+      if (!career || !course || !parallel) {
+        return res.status(400).json({
+          message: 'Los parámetros career, course y parallel son requeridos',
+          error: 'Bad Request',
+        });
+      }
+
+      const workbook = await this.reportsService.exportGroupReportByParallelToExcel(
+        career,
+        course,
+        parallel,
+        sectionId,
+      );
+      const buffer = await workbook.xlsx.writeBuffer();
+
+      const safeCareer = career.replace(/[^a-zA-Z0-9-_]/g, '_');
+      const safeCourse = course.replace(/[^a-zA-Z0-9-_]/g, '_');
+      const safeParallel = parallel.replace(/[^a-zA-Z0-9-_]/g, '_');
+      const filename = `reporte-grupal-paralelo-${safeCareer}-${safeCourse}-${safeParallel}-${new Date().toISOString().split('T')[0]}.xlsx`;
+
+      res.setHeader(
+        'Content-Type',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      );
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="${filename}"`,
+      );
+
+      return res.send(buffer);
+    } catch (error) {
+      console.error('Error al exportar reporte grupal por paralelo:', error);
+      return res.status(500).json({
+        message: error instanceof Error ? error.message : 'Error al generar el reporte',
+        error: 'Internal Server Error',
+      });
+    }
+  }
+
   // Reporte grupal por carrera
   @Get('group/career')
   @UseGuards(RolesGuard)

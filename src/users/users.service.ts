@@ -59,6 +59,11 @@ export class UsersService {
   }
 
   async update(id: string, updateData: Partial<UserDocument>): Promise<UserDocument> {
+    // Si se proporciona una nueva contraseña, hashearla antes de guardar
+    if (updateData.password) {
+      updateData.password = await bcrypt.hash(updateData.password, 10);
+    }
+
     const user = await this.userModel.findByIdAndUpdate(id, updateData, { new: true });
     if (!user) {
       throw new NotFoundException('Usuario no encontrado');

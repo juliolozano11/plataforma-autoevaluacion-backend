@@ -67,9 +67,7 @@ export class UsersController {
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN)
   async update(@Param('id') id: string, @Body() updateData: any) {
-    // No permitir actualizar password directamente
-    const { password, ...safeUpdateData } = updateData;
-    return this.usersService.update(id, safeUpdateData);
+    return this.usersService.update(id, updateData);
   }
 
   @Delete(':id')
