@@ -32,8 +32,12 @@ export class Question {
   @Prop({ type: Number, default: 1 })
   minScale?: number; // Valor mínimo de la escala (por defecto 1)
 
-  @Prop({ type: Number, default: 10 })
-  maxScale?: number; // Valor máximo de la escala (por defecto 10)
+  @Prop({ type: Number, default: 5 })
+  maxScale?: number; // Valor máximo de la escala (por defecto 5, debe estar entre 5 y 10)
+
+  // Tipo de respuesta para escalas (satisfacción, frecuencia, acuerdo, numérico)
+  @Prop({ type: String, enum: ['satisfaction', 'frequency', 'agreement', 'numeric'], default: 'satisfaction' })
+  responseType?: 'satisfaction' | 'frequency' | 'agreement' | 'numeric';
 
   @Prop({ type: Number, required: true, min: 0, default: 1 })
   points: number;

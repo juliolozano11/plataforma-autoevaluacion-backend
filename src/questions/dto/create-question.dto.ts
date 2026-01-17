@@ -1,4 +1,4 @@
-import { IsString, IsMongoId, IsEnum, IsArray, IsNumber, Min, IsOptional, ValidateIf } from 'class-validator';
+import { IsString, IsMongoId, IsEnum, IsArray, IsNumber, Min, Max, IsOptional, ValidateIf } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { QuestionType } from '../../schemas/question.schema';
 
@@ -46,25 +46,42 @@ export class CreateQuestionDto {
 
   @ApiProperty({
     example: 1,
-    description: 'Valor mínimo de la escala para preguntas tipo scale (Likert)',
+    description: 'Valor mínimo de la escala para preguntas tipo scale (Likert). Siempre debe ser 1',
     required: false,
     default: 1,
   })
   @IsOptional()
   @IsNumber()
-  @Min(0)
+  @Min(1)
+  @Max(1, { message: 'El valor mínimo siempre debe ser 1' })
   minScale?: number;
 
   @ApiProperty({
-    example: 10,
-    description: 'Valor máximo de la escala para preguntas tipo scale (Likert)',
+    example: 5,
+    description: 'Valor máximo de la escala para preguntas tipo scale (Likert). Debe estar entre 5 y 10',
     required: false,
-    default: 10,
+    default: 5,
+    minimum: 5,
+    maximum: 10,
   })
   @IsOptional()
   @IsNumber()
-  @Min(1)
+  @Min(5, { message: 'El valor máximo debe ser al menos 5' })
+  @Max(10, { message: 'El valor máximo no puede ser mayor a 10' })
   maxScale?: number;
+
+  @ApiProperty({
+    example: 'satisfaction',
+    description: 'Tipo de respuesta para escalas: satisfaction, frequency, agreement, numeric',
+    required: false,
+    default: 'satisfaction',
+    enum: ['satisfaction', 'frequency', 'agreement', 'numeric'],
+  })
+  @IsOptional()
+  @IsEnum(['satisfaction', 'frequency', 'agreement', 'numeric'], {
+    message: 'El tipo de respuesta debe ser: satisfaction, frequency, agreement o numeric',
+  })
+  responseType?: 'satisfaction' | 'frequency' | 'agreement' | 'numeric';
 
   @ApiProperty({
     example: 5,
