@@ -1,12 +1,15 @@
 import {
   Controller,
   Post,
+  Get,
   UploadedFile,
   UseInterceptors,
   Body,
   BadRequestException,
   UseGuards,
+  Res,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UploadService } from './upload.service';
@@ -117,6 +120,19 @@ export class UploadController {
       throw new BadRequestException('Formato debe ser excel o csv');
     }
     return this.uploadService.getExpectedFormat(format);
+  }
+
+  @Get('template')
+  @ApiOperation({ summary: 'Descargar plantilla Excel para cargar preguntas (Solo Admin)' })
+  @ApiResponse({ status: 200, description: 'Plantilla Excel descargada' })
+  @ApiResponse({ status: 401, description: 'No autorizado' })
+  @ApiResponse({ status: 403, description: 'No tienes permisos de administrador' })
+  async downloadTemplate(@Res() res: Response) {
+    const templateBuffer = await this.uploadService.generateTemplate();
+    
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename=plantilla-preguntas.xlsx');
+    res.send(templateBuffer);
   }
 }
 
